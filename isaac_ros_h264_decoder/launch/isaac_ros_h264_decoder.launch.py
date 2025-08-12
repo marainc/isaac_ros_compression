@@ -19,13 +19,17 @@ import launch
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
-
 def generate_launch_description():
     """Launch the H.264 Decoder Node."""
     decoder_node = ComposableNode(
         name='decoder',
         package='isaac_ros_h264_decoder',
-        plugin='nvidia::isaac_ros::h264_decoder::DecoderNode')
+        plugin='nvidia::isaac_ros::h264_decoder::DecoderNode',
+        remappings=[
+            ('image_compressed', '/poland1/argus_quad/camera_0/compressed_recording'),
+            ('image_uncompressed', 'your_output_topic_name')  # Optional: remap output too
+        ]
+    )
 
     container = ComposableNodeContainer(
         name='decoder_container',
@@ -37,4 +41,4 @@ def generate_launch_description():
         arguments=['--ros-args', '--log-level', 'info']
     )
 
-    return (launch.LaunchDescription([container]))
+    return launch.LaunchDescription([container])
