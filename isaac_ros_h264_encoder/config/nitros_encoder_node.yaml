@@ -1,45 +1,5 @@
 %YAML 1.2
 ---
-name: color_converter
-components:
-- name: data_receiver
-  type: nvidia::gxf::DoubleBufferReceiver
-  parameters:
-    capacity: 4
-- type: nvidia::gxf::MessageAvailableSchedulingTerm
-  parameters:
-    receiver: data_receiver
-    min_size: 1
-- name: data_transmitter
-  type: nvidia::gxf::DoubleBufferTransmitter
-  parameters:
-    capacity: 4
-- type: nvidia::gxf::DownstreamReceptiveSchedulingTerm
-  parameters:
-    transmitter: data_transmitter
-    min_size: 1
-- name: pool
-  type: nvidia::gxf::BlockMemoryPool
-  parameters:
-    storage_type: 1
-    block_size: 19000000  # 19MB for 3552x3556 NV12
-    num_blocks: 8
-- name: color_converter_operator
-  type: nvidia::isaac::tensor_ops::StreamConvertColorFormat
-  parameters:
-    output_type: "NV12"
-    receiver: data_receiver
-    transmitter: data_transmitter
-    pool: pool
-    input_adapter: global/adapter
-    output_adapter: global/adapter
-    output_name: "image"
-    stream: global/stream
-- type: nvidia::gxf::MemoryAvailableSchedulingTerm
-  parameters:
-    allocator: pool
-    min_blocks: 1
----
 name: global
 components:
 - name: adapter
@@ -72,17 +32,16 @@ components:
     input_frame: data_receiver
     inbuf_storage_type: 1
     profile: 0
-    qp: 22  # Slightly higher for better compression
-    hw_preset_type: 1  # Medium preset for balance
-    input_width: 3552
-    input_height: 3556
+    qp: 22
+    hw_preset_type: 1
+    input_width: 1920
+    input_height: 1200
     input_format: nv12
-    config: custom
-    iframe_interval: 1  # Less frequent I-frames for efficiency
+    config: pframe_cqp
+    iframe_interval: 5
     rate_control_mode: 0
-    level: 14  
+    level: 14
     videoencoder_context: global/encoder_context
-
 ---
 name: encoder_response
 components:
@@ -98,7 +57,7 @@ components:
   type: nvidia::gxf::BlockMemoryPool
   parameters:
     storage_type: 0
-    block_size: 15000000  # 15MB for compressed output
+    block_size: 15000000
     num_blocks: 8
 - type: nvidia::gxf::VideoEncoderResponse
   parameters:
@@ -130,17 +89,6 @@ components:
     max_waiting_count: 1
     drop_waiting: false
 ---
-name: connections
-components:
-- type: nvidia::gxf::Connection
-  parameters:
-    source: color_converter/data_transmitter
-    target: encoder/data_receiver
-- type: nvidia::gxf::Connection
-  parameters:
-    source: encoder_response/output
-    target: sink/signal
----
 components:
 - name: clock
   type: nvidia::gxf::RealtimeClock
@@ -151,3 +99,7 @@ components:
 - type: nvidia::gxf::JobStatistics
   parameters:
     clock: clock
+- type: nvidia::gxf::Connection
+  parameters:
+    source: encoder_response/output
+    target: sink/signal

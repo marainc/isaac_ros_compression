@@ -37,8 +37,8 @@ namespace h264_encoder
 
 using nvidia::gxf::optimizer::GraphIOGroupSupportedDataTypesInfoList;
 
-constexpr char INPUT_COMPONENT_KEY[] = "color_converter/data_receiver";
-constexpr char INPUT_DEFAULT_FORMAT[] = "nitros_image_bgr8";
+constexpr char INPUT_COMPONENT_KEY[] = "encoder/data_receiver";
+constexpr char INPUT_DEFAULT_FORMAT[] = "nitros_image_nv12";
 constexpr char INPUT_TOPIC_NAME[] = "image_raw";
 
 constexpr char OUTPUT_COMPONENT_KEY[] = "sink/sink";
@@ -105,10 +105,15 @@ EncoderNode::EncoderNode(const rclcpp::NodeOptions & options)
 {
   RCLCPP_DEBUG(get_logger(), "[EncoderNode] Constructor");
 
+
+  // Declare the QoS parameter the framework expects
+  declare_parameter<int>("_qos_depth", 10);
+
   registerSupportedType<nvidia::isaac_ros::nitros::NitrosImage>();
   registerSupportedType<nvidia::isaac_ros::nitros::NitrosCompressedImage>();
 
   startNitrosNode();
+
 }
 
 void EncoderNode::preLoadGraphCallback()

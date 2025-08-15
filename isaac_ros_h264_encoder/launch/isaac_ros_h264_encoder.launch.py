@@ -23,7 +23,10 @@ from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-    """Launch the H.264 Encoder Node."""
+    """Launch the H.264 Encoder Node.
+    
+    Note: This encoder expects NV12 format input directly (no color conversion).
+    """
     launch_args = [
         DeclareLaunchArgument(
             'input_height',

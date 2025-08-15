@@ -1,27 +1,13 @@
+# NOTE: this only works for 30 seconds before causing argus crash when encoding 60 FPS 2x 4k images
+
 %YAML 1.2
-# SPDX-FileCopyrightText: NVIDIA CORPORATION & AFFILIATES
-# Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
 ---
 name: color_converter
 components:
 - name: data_receiver
   type: nvidia::gxf::DoubleBufferReceiver
   parameters:
-    capacity: 12
+    capacity: 12  # Increased for 60 FPS
 - type: nvidia::gxf::MessageAvailableSchedulingTerm
   parameters:
     receiver: data_receiver
@@ -29,7 +15,7 @@ components:
 - name: data_transmitter
   type: nvidia::gxf::DoubleBufferTransmitter
   parameters:
-    capacity: 12
+    capacity: 12  # Increased for 60 FPS
 - type: nvidia::gxf::DownstreamReceptiveSchedulingTerm
   parameters:
     transmitter: data_transmitter
@@ -38,8 +24,8 @@ components:
   type: nvidia::gxf::BlockMemoryPool
   parameters:
     storage_type: 1
-    block_size: 6278400
-    num_blocks: 40
+    block_size: 19000000  # 19MB for 3552x3556 NV12
+    num_blocks: 24  # Increased for 60 FPS
 - name: color_converter_operator
   type: nvidia::isaac::tensor_ops::StreamConvertColorFormat
   parameters:
@@ -77,7 +63,7 @@ components:
 - name: data_receiver
   type: nvidia::gxf::DoubleBufferReceiver
   parameters:
-    capacity: 1
+    capacity: 12  # Increased for 60 FPS
 - type: nvidia::gxf::MessageAvailableSchedulingTerm
   parameters:
     receiver: data_receiver
@@ -88,22 +74,24 @@ components:
     input_frame: data_receiver
     inbuf_storage_type: 1
     profile: 0
-    qp: 20
-    hw_preset_type: 0
-    input_width: 1920
-    input_height: 1080
+    qp: 45  # Maximum QP for absolute speed (very low quality, maximum speed)
+    hw_preset_type: 0  # Fast preset for speed over quality
+    input_width: 3552
+    input_height: 3556
     input_format: nv12
-    config: pframe_cqp
-    iframe_interval: 5
+    config: custom
+    iframe_interval: 10  # Maximum infrequent I-frames for absolute speed
     rate_control_mode: 0
+    level: 14  
     videoencoder_context: global/encoder_context
+
 ---
 name: encoder_response
 components:
 - name: output
   type: nvidia::gxf::DoubleBufferTransmitter
   parameters:
-    capacity: 1
+    capacity: 6  # Increased for 60 FPS
 - type: nvidia::gxf::DownstreamReceptiveSchedulingTerm
   parameters:
     transmitter: output
@@ -112,8 +100,8 @@ components:
   type: nvidia::gxf::BlockMemoryPool
   parameters:
     storage_type: 0
-    block_size: 6912000
-    num_blocks: 40
+    block_size: 15000000  # 15MB for compressed output
+    num_blocks: 30  # Increased for 60 FPS
 - type: nvidia::gxf::VideoEncoderResponse
   parameters:
     videoencoder_context: global/encoder_context
@@ -132,7 +120,7 @@ components:
 - name: signal
   type: nvidia::gxf::DoubleBufferReceiver
   parameters:
-    capacity: 1
+    capacity: 8  # Increased for 60 FPS
 - type: nvidia::gxf::MessageAvailableSchedulingTerm
   parameters:
     receiver: signal
